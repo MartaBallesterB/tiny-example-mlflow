@@ -1,0 +1,11 @@
+# env and data
+.venv/
+data/
+
+# macOS
+.DS_Store
+
+# mlflow artifacts
+mlruns/
+mlflow.db
+
