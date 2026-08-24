@@ -1,0 +1,11 @@
+[project]
+name = "tiny-example-mlflow"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "mlflow>=3.15.1",
+    "numpy>=2.5.2",
+    "pandas>=2.3.3",
+    "polars>=1.44.0",
+    "xgboost>=3.4.1",
+]
