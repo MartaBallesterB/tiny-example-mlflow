@@ -1,5 +1,6 @@
 import numpy as np
-import pandas as pd
+import polars as pl
+#import pandas as pd
 import xgboost as xgb
 import mlflow
 import mlflow.xgboost
@@ -9,26 +10,35 @@ mlflow.set_tracking_uri("sqlite:///mlflow.db")
 mlflow.set_experiment("flight_demand_forecasting_example")
 
 # mocked data with dates and passenger counts + feature eng
-dates = pd.date_range(start="2025-01-01", end="2025-12-31", freq="D")
-df = pd.DataFrame({
+dates = pl.date_range(
+    start=pl.date(2025, 1, 1),
+    end=pl.date(2025, 12, 31),
+    interval="1d",
+    eager=True
+)
+df = pl.DataFrame({
     "date": dates,
-    "passenger_count": np.random.randint(100, 300, size=len(dates))
-}).sort_values("date")
+    "passenger_count": pl.int_range(100, 300, eager=True).sample(n=len(dates), with_replacement=True)
+}).sort("date") # to keep the time series order!
 
-df["day_of_week"] = df["date"].dt.dayofweek
-df["month"] = df["date"].dt.month
-df["lag_1"] = df["passenger_count"].shift(1)
-df["lag_7"] = df["passenger_count"].shift(7)
-df["rolling_7_avg"] = df["passenger_count"].shift(1).rolling(7).mean()
-df = df.dropna()
+df = df.with_columns([
+    pl.col("date").dt.weekday().alias("day_of_week"),
+    pl.col("date").dt.month().alias("month"),
+    pl.col("passenger_count").shift(1).alias("lag_1"),
+    pl.col("passenger_count").shift(7).alias("lag_7"),
+    pl.col("passenger_count").shift(1).rolling_mean(window_size=7).alias("rolling_7_avg") # media semanal de 'passenger_count' con shift de 1 (dia actual excluido)
+]).drop_nulls()
 
 # split for time series scenario!
 features = ["day_of_week", "month", "lag_1", "lag_7", "rolling_7_avg"]
 target = "passenger_count"
 
 split_idx = int(len(df) * 0.8)
-X_train, y_train = df[features].iloc[:split_idx], df[target].iloc[:split_idx]
-X_val, y_val = df[features].iloc[split_idx:], df[target].iloc[split_idx:]
+train_df = df.slice(0, split_idx)
+val_df = df.slice(split_idx, len(df) - split_idx)
+
+X_train, y_train = train_df[features], train_df[target]
+X_val, y_val = val_df[features], val_df[target]
 
 # training and logging
 with mlflow.start_run(run_name="single_xgboost_run"):
@@ -43,7 +53,8 @@ with mlflow.start_run(run_name="single_xgboost_run"):
     model.fit(X_train, y_train)
     
     preds = model.predict(X_val)
-    rmse = np.sqrt(np.mean((y_val - preds) ** 2))
+
+    rmse = np.sqrt(np.mean((y_val.to_numpy().ravel() - preds) ** 2))
     
     # logs 
     mlflow.log_params(params)
