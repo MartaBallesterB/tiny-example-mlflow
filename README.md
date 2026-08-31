@@ -9,3 +9,6 @@
 *Temporal Split:* strict chronological 80/20 train/val split (data leakage prevention).
 
 *MLflow Tracking:* log hyperparameters, RMSE metric and the binary model artifact directly into mlflow.db (SQLite).
+
+
+MVP: tracking experiments with MLFlow, comparing different time-series models + hyperparameter tuning.
