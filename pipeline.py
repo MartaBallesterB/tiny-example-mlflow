@@ -30,7 +30,7 @@ class TimeSeriesDataGenerator:
 
 class FeatureEngineering:
 
-    def create_features(self, df_raw):
+    def create_lag_and_rolling_features(self, df_raw):
         features = ["day_of_week", "month", "lag_1", "lag_7", "rolling_7_avg"]
 
         df = df_raw.with_columns([
@@ -72,7 +72,7 @@ class XGBoostTimeSeriesRunner:
     def run(self, config: ExperimentConfig):
 
         engineer = FeatureEngineering()
-        df_features, features = engineer.create_features(self.raw_data)
+        df_features, features = engineer.create_lag_and_rolling_features(self.raw_data) # lag creation before split for time-series to avoid Nulls in val set!
 
         X_train, y_train, X_val, y_val = self._split_data(df_features, features)
 
