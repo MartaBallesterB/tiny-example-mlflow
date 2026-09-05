@@ -9,7 +9,7 @@ from sklearn.model_selection import TimeSeriesSplit
 
 # explicit local DB for mlflow tracking + xgboost autologging
 mlflow.set_tracking_uri("sqlite:///mlflow.db")
-mlflow.set_experiment("experiment_2_flight_demand_forecasting: cross-validation for time-series data")
+mlflow.set_experiment("flight_demand_forecasting")
 mlflow.xgboost.autolog(disable = True)
 
 class TimeSeriesDataGenerator:
@@ -80,7 +80,8 @@ class XGBoostTimeSeriesRunner:
             mlflow.set_tags({
                 "model_type": "XGBoost",
                 "feature_set": "baseline_lags",
-                "cross_val_strategy": "TimeSeriesSplit"
+                "cross_val_strategy": "TimeSeriesSplit",
+                "n_splits": self.n_splits,
             })
 
             mlflow.log_params(config.params)
@@ -121,9 +122,9 @@ if __name__ == "__main__":
     runner = XGBoostTimeSeriesRunner(raw_data=df_raw, n_splits=3)
 
     experiments = [
-        ExperimentConfig(name="xgb_baseline", params={"n_estimators": 50, "max_depth": 3, "learning_rate": 0.1}),
-        ExperimentConfig(name="xgb_more_trees", params={"n_estimators": 150, "max_depth": 5, "learning_rate": 0.03}),
-        ExperimentConfig(name="xgb_deep_trees", params={"n_estimators": 100, "max_depth": 7, "learning_rate": 0.05}),
+        ExperimentConfig(name="xgb_baseline_cv3", params={"n_estimators": 50, "max_depth": 3, "learning_rate": 0.1}),
+        ExperimentConfig(name="xgb_more_trees_cv3", params={"n_estimators": 150, "max_depth": 5, "learning_rate": 0.03}),
+        ExperimentConfig(name="xgb_deep_trees_cv3", params={"n_estimators": 100, "max_depth": 7, "learning_rate": 0.05}),
     ]
 
     for exp in experiments:
