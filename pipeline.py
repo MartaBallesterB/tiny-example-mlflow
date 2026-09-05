@@ -42,7 +42,7 @@ class FeatureEngineering:
             pl.col("passenger_count").shift(1).rolling_mean(window_size=7).alias("rolling_7_avg") 
         ])
 
-        return df.drop_nulls(), features
+        return df, features
 
 @dataclass
 class ExperimentConfig:
@@ -62,7 +62,7 @@ class XGBoostTimeSeriesRunner:
     def _split_data(self, df, features):
         split_idx = int(len(df) * self.train_ratio)
         train_df = df.slice(0, split_idx)
-        val_df = df.slice(split_idx, len(df) - split_idx)
+        val_df = df.slice(split_idx)
 
         X_train, y_train = train_df[features], train_df[self.target_col]
         X_val, y_val = val_df[features], val_df[self.target_col]
@@ -88,13 +88,7 @@ class XGBoostTimeSeriesRunner:
             preds = model.predict(X_val)
             rmse = np.sqrt(np.mean((y_val.to_numpy().ravel() - preds) ** 2))
 
-            # log to mlflow
-            mlflow.log_params(config.params)
-            mlflow.log_metric("rmse", rmse)
-            mlflow.xgboost.log_model(xgb_model=model, name="model")
-
             print(f"[{config.name}] Successful execution! RMSE: {rmse:.4f}")
-
 
 
 if __name__ == "__main__":
@@ -109,4 +103,8 @@ if __name__ == "__main__":
 
     for exp in experiments:
         runner.run(exp)
+
+
+# 1) check internal optimization: loss function and regularization parameters. reg_alpha, reg_lambda
+# 2) check external optimization: hyperparameter tuning with Optuna or Hyperopt.
 
