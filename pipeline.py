@@ -2,7 +2,6 @@ import numpy as np
 import polars as pl
 import xgboost as xgb
 import mlflow
-import mlflow.xgboost
 
 from dataclasses import dataclass
 from typing import Dict, Any
@@ -11,7 +10,7 @@ from sklearn.model_selection import TimeSeriesSplit
 # explicit local DB for mlflow tracking + xgboost autologging
 mlflow.set_tracking_uri("sqlite:///mlflow.db")
 mlflow.set_experiment("experiment_2_flight_demand_forecasting: cross-validation for time-series data")
-mlflow.xgboost.autolog(log_models = False)
+mlflow.xgboost.autolog(disable = True)
 
 class TimeSeriesDataGenerator:
     """Mocked data generator"""
